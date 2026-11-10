@@ -1,68 +1,119 @@
-    /* Menu section */
-    .section {
-      max-width: 1000px;
-      margin: 0 auto;
-      padding: 72px 24px;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0b0b">
+  <title>Ember &amp; Roll | Fire-Grilled Chicken Rolls, Gulshan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0b0b;
+      --surface: #151515;
+      --text: #f4efe6;
+      --muted: #a39d92;
+      --gold: #c9a24b;
     }
-    .section h2 {
-      font-family: 'Playfair Display', serif;
-      font-size: clamp(1.8rem, 6vw, 2.6rem);
-      margin: 0 0 8px;
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', Arial, sans-serif;
+      line-height: 1.6;
     }
-    .section .lead {
-      color: var(--muted);
-      margin: 0 0 32px;
-    }
-    .menu-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 20px;
-    }
-    .card {
-      background: var(--surface);
-      border: 1px solid #262626;
-      border-radius: 16px;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      transition: transform 0.2s ease, border-color 0.2s ease;
-    }
-    .card:hover {
-      transform: translateY(-4px);
-      border-color: var(--gold);
-    }
-    .card h3 {
-      font-family: 'Playfair Display', serif;
-      margin: 0 0 8px;
-      font-size: 1.25rem;
-    }
-    .card p {
-      color: var(--muted);
-      font-size: 0.9rem;
-      margin: 0 0 20px;
-      flex-grow: 1;
-    }
-    .card .row {
+
+    /* Sticky navigation bar */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      padding: 16px 24px;
+      background: rgba(11, 11, 11, 0.85);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid #222;
     }
-    .price {
+    .logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.25rem;
       color: var(--gold);
-      font-weight: 600;
+      text-decoration: none;
     }
-    .add-btn {
-      background: transparent;
+    .nav a.link {
+      color: var(--muted);
+      text-decoration: none;
+      margin-left: 20px;
+      font-size: 0.9rem;
+    }
+    .nav a.link:hover { color: var(--text); }
+
+    /* Hero section */
+    .hero {
+      min-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 48px 24px;
+      background: radial-gradient(circle at 50% 30%, #2a2112 0%, var(--bg) 65%);
+    }
+    .eyebrow {
       color: var(--gold);
-      border: 1px solid var(--gold);
-      border-radius: 999px;
-      padding: 8px 18px;
-      font-family: inherit;
-      font-size: 0.85rem;
-      cursor: pointer;
-      transition: background 0.2s ease, color 0.2s ease;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      margin: 0 0 16px;
     }
-    .add-btn:hover {
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.5rem, 9vw, 5rem);
+      line-height: 1.1;
+      margin: 0 0 16px;
+    }
+    .hero p.sub {
+      max-width: 480px;
+      color: var(--muted);
+      margin: 0 0 32px;
+    }
+    .btn {
+      display: inline-block;
+      padding: 14px 32px;
       background: var(--gold);
       color: #111;
+      font-weight: 600;
+      text-decoration: none;
+      border-radius: 999px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(201, 162, 75, 0.35);
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <a class="logo" href="#top">Ember &amp; Roll</a>
+    <div>
+      <a class="link" href="#menu">Menu</a>
+      <a class="link" href="#order">Order</a>
+    </div>
+  </nav>
+
+  <header class="hero" id="top">
+    <p class="eyebrow">Gulshan, Dhaka</p>
+    <h1>Fire-grilled.<br>Rolled to order.</h1>
+    <p class="sub">Charcoal-grilled chicken, wrapped fresh in warm, buttery paratha. Made the slow way, served fast.</p>
+    <a class="btn" href="#menu">See the Menu</a>
+  </header>
+
+</body>
+</html>
