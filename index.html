@@ -96,6 +96,74 @@
       transform: translateY(-2px);
       box-shadow: 0 8px 24px rgba(201, 162, 75, 0.35);
     }
+        /* Menu section */
+    .section {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 72px 24px;
+    }
+    .section h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.8rem, 6vw, 2.6rem);
+      margin: 0 0 8px;
+    }
+    .section .lead {
+      color: var(--muted);
+      margin: 0 0 32px;
+    }
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid #262626;
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: var(--gold);
+    }
+    .card h3 {
+      font-family: 'Playfair Display', serif;
+      margin: 0 0 8px;
+      font-size: 1.25rem;
+    }
+    .card p {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin: 0 0 20px;
+      flex-grow: 1;
+    }
+    .card .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .price {
+      color: var(--gold);
+      font-weight: 600;
+    }
+    .add-btn {
+      background: transparent;
+      color: var(--gold);
+      border: 1px solid var(--gold);
+      border-radius: 999px;
+      padding: 8px 18px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+    .add-btn:hover {
+      background: var(--gold);
+      color: #111;
+    }
   </style>
 </head>
 <body>
@@ -114,6 +182,34 @@
     <p class="sub">Charcoal-grilled chicken, wrapped fresh in warm, buttery paratha. Made the slow way, served fast.</p>
     <a class="btn" href="#menu">See the Menu</a>
   </header>
+  <section class="section" id="menu">
+    <h2>The Menu</h2>
+    <p class="lead">Grilled over charcoal, rolled to order.</p>
+    <div class="menu-grid" id="menu-grid"></div>
+  </section>
+  <script>
+    // Our menu data. Later this will come from the database.
+    const menuItems = [
+      { id: 1, name: "Classic Ember Roll", desc: "Charcoal-grilled chicken, onion, house mint chutney.", price: 220 },
+      { id: 2, name: "Spicy Peri Roll", desc: "Peri-peri marinated chicken with crunchy slaw.", price: 250 },
+      { id: 3, name: "Cheesy Melt Roll", desc: "Grilled chicken with melted cheese and garlic sauce.", price: 280 },
+      { id: 4, name: "Smoky BBQ Roll", desc: "Smoked BBQ glaze, pickled onion, fresh cucumber.", price: 260 },
+      { id: 5, name: "Loaded Fries", desc: "Crispy fries with sauce and a sprinkle of spice.", price: 120 },
+      { id: 6, name: "Mint Lemonade", desc: "Fresh lime, mint and a little sparkle.", price: 90 }
+    ];
 
+    // Build one card for each menu item and put it on the page.
+    const grid = document.getElementById("menu-grid");
+    grid.innerHTML = menuItems.map(item => `
+      <div class="card">
+        <h3>${item.name}</h3>
+        <p>${item.desc}</p>
+        <div class="row">
+          <span class="price">৳${item.price}</span>
+          <button class="add-btn" data-id="${item.id}">+ Add</button>
+        </div>
+      </div>
+    `).join("");
+  </script>
 </body>
 </html>
