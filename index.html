@@ -278,6 +278,26 @@
       z-index: 40;
     }
     .toast.show { transform: translate(-50%, 0); opacity: 1; }
+      /* Checkout form */
+    .cart-panel { overflow-y: auto; }
+    .field {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 12px 14px;
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid #333;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 16px; /* 16px stops phones from zooming in when you tap a field */
+    }
+    .field:focus { outline: none; border-color: var(--gold); }
+    .form-error {
+      color: #e57373;
+      font-size: 0.85rem;
+      min-height: 1.2em;
+      margin: 0 0 8px;
+    }
   </style>
 </head>
 <body>
@@ -308,9 +328,19 @@
       <button class="close-btn" id="cart-close">&times;</button>
     </div>
     <div class="cart-items" id="cart-items"></div>
-    <div class="cart-foot">
+        <div class="cart-foot">
       <div class="total-row"><span>Total</span><strong id="cart-total">৳0</strong></div>
-      <button class="btn checkout-btn" id="checkout-btn">Checkout</button>
+      <input class="field" id="cust-name" type="text" placeholder="Your name" autocomplete="name">
+      <input class="field" id="cust-phone" type="tel" placeholder="Phone (e.g. 01712345678)" autocomplete="tel">
+      <select class="field" id="cust-sauce">
+        <option>Mint chutney</option>
+        <option>Garlic mayo</option>
+        <option>Hot chili</option>
+        <option>No sauce</option>
+      </select>
+      <input class="field" id="cust-note" type="text" placeholder="Note (optional)">
+      <p class="form-error" id="form-error"></p>
+      <button class="btn checkout-btn" id="checkout-btn">Order on WhatsApp</button>
     </div>
   </aside>
   <div class="toast" id="toast">Added to cart</div>
@@ -416,6 +446,46 @@
     overlay.addEventListener("click", closeCart);
 
     renderCart();
+      // ----- WhatsApp checkout -----
+    // IMPORTANT: replace with the real WhatsApp number.
+    // Format: country code 880, then the number WITHOUT the leading 0, no + or spaces.
+    // Example: 01712345678 becomes 8801712345678
+    const WHATSAPP_NUMBER = "8801340965699";
+
+    document.getElementById("checkout-btn").addEventListener("click", () => {
+      const name = document.getElementById("cust-name").value.trim();
+      const phone = document.getElementById("cust-phone").value.trim();
+      const sauce = document.getElementById("cust-sauce").value;
+      const note = document.getElementById("cust-note").value.trim();
+      const errorBox = document.getElementById("form-error");
+
+      // Check the form before opening WhatsApp
+      if (cart.length === 0) { errorBox.textContent = "Your cart is empty."; return; }
+      if (name === "") { errorBox.textContent = "Please enter your name."; return; }
+      if (!/^01\d{9}$/.test(phone)) { errorBox.textContent = "Enter a valid phone number like 01712345678."; return; }
+      errorBox.textContent = "";
+
+      // Build the message line by line
+      let total = 0;
+      const lines = cart.map(line => {
+        const item = menuItems.find(m => m.id === line.id);
+        const lineTotal = item.price * line.qty;
+        total += lineTotal;
+        return line.qty + "x " + item.name + " - ৳" + lineTotal;
+      });
+
+      let message = "New order from Ember & Roll\n";
+      message += "Name: " + name + "\n";
+      message += "Phone: " + phone + "\n";
+      message += "Sauce: " + sauce + "\n\n";
+      message += lines.join("\n") + "\n\n";
+      message += "Total: ৳" + total;
+      if (note !== "") { message += "\nNote: " + note; }
+
+      // Turn the message into a safe link and open WhatsApp
+      const url = "https://wa.me/" + WHATSAPP_NUMBER + "?text=" + encodeURIComponent(message);
+      window.open(url, "_blank");
+    });
   </script>
 </body>
 </html>
