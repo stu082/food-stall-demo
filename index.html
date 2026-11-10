@@ -164,6 +164,120 @@
       background: var(--gold);
       color: #111;
     }
+      /* Cart button in the nav */
+    .cart-btn {
+      background: transparent;
+      color: var(--gold);
+      border: 1px solid var(--gold);
+      border-radius: 999px;
+      padding: 6px 16px;
+      margin-left: 20px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    /* Slide-out cart panel */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      z-index: 20;
+    }
+    .overlay.show { opacity: 1; pointer-events: auto; }
+    .cart-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      height: 100%;
+      width: min(380px, 100%);
+      background: var(--surface);
+      border-left: 1px solid #262626;
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+      z-index: 30;
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+    }
+    .cart-panel.open { transform: translateX(0); }
+    .cart-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .cart-head h3 {
+      font-family: 'Playfair Display', serif;
+      margin: 0;
+      font-size: 1.4rem;
+    }
+    .close-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 1.6rem;
+      cursor: pointer;
+    }
+    .cart-items { flex-grow: 1; overflow-y: auto; }
+    .empty { color: var(--muted); }
+    .cart-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #262626;
+    }
+    .cart-line .name { font-weight: 500; }
+    .cart-line .sub { color: var(--muted); font-size: 0.85rem; }
+    .qty {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .qty-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid var(--gold);
+      background: transparent;
+      color: var(--gold);
+      cursor: pointer;
+    }
+    .cart-foot { padding-top: 16px; }
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 1.1rem;
+      margin-bottom: 16px;
+    }
+    .checkout-btn {
+      width: 100%;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 1rem;
+    }
+
+    /* "Added to cart" message */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translate(-50%, 80px);
+      background: var(--gold);
+      color: #111;
+      padding: 10px 22px;
+      border-radius: 999px;
+      font-weight: 600;
+      opacity: 0;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      z-index: 40;
+    }
+    .toast.show { transform: translate(-50%, 0); opacity: 1; }
   </style>
 </head>
 <body>
@@ -172,7 +286,7 @@
     <a class="logo" href="#top">Ember &amp; Roll</a>
     <div>
       <a class="link" href="#menu">Menu</a>
-      <a class="link" href="#order">Order</a>
+            <button class="cart-btn" id="cart-open">Cart (<span id="cart-count">0</span>)</button>
     </div>
   </nav>
 
@@ -187,6 +301,19 @@
     <p class="lead">Grilled over charcoal, rolled to order.</p>
     <div class="menu-grid" id="menu-grid"></div>
   </section>
+    <div class="overlay" id="overlay"></div>
+  <aside class="cart-panel" id="cart-panel">
+    <div class="cart-head">
+      <h3>Your Order</h3>
+      <button class="close-btn" id="cart-close">&times;</button>
+    </div>
+    <div class="cart-items" id="cart-items"></div>
+    <div class="cart-foot">
+      <div class="total-row"><span>Total</span><strong id="cart-total">৳0</strong></div>
+      <button class="btn checkout-btn" id="checkout-btn">Checkout</button>
+    </div>
+  </aside>
+  <div class="toast" id="toast">Added to cart</div>
   <script>
     // Our menu data. Later this will come from the database.
     const menuItems = [
@@ -210,6 +337,85 @@
         </div>
       </div>
     `).join("");
+      // ----- Cart logic -----
+    let cart = []; // each line looks like { id: 1, qty: 2 }
+
+    const overlay = document.getElementById("overlay");
+    const panel = document.getElementById("cart-panel");
+    const itemsBox = document.getElementById("cart-items");
+    const totalEl = document.getElementById("cart-total");
+    const countEl = document.getElementById("cart-count");
+    const toast = document.getElementById("toast");
+
+    function openCart() {
+      panel.classList.add("open");
+      overlay.classList.add("show");
+    }
+    function closeCart() {
+      panel.classList.remove("open");
+      overlay.classList.remove("show");
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 1400);
+    }
+
+    function addToCart(id) {
+      const line = cart.find(l => l.id === id);
+      if (line) { line.qty += 1; } else { cart.push({ id: id, qty: 1 }); }
+      renderCart();
+      showToast("Added to cart");
+    }
+
+    function changeQty(id, delta) {
+      const line = cart.find(l => l.id === id);
+      if (!line) return;
+      line.qty += delta;
+      if (line.qty <= 0) { cart = cart.filter(l => l.id !== id); }
+      renderCart();
+    }
+
+    function renderCart() {
+      let total = 0;
+      let count = 0;
+      const html = cart.map(line => {
+        const item = menuItems.find(m => m.id === line.id);
+        total += item.price * line.qty;
+        count += line.qty;
+        return `
+          <div class="cart-line">
+            <div>
+              <div class="name">${item.name}</div>
+              <div class="sub">৳${item.price} each</div>
+            </div>
+            <div class="qty">
+              <button class="qty-btn" data-id="${item.id}" data-delta="-1">−</button>
+              <span>${line.qty}</span>
+              <button class="qty-btn" data-id="${item.id}" data-delta="1">+</button>
+            </div>
+          </div>`;
+      }).join("");
+      itemsBox.innerHTML = html || '<p class="empty">Your cart is empty.</p>';
+      totalEl.textContent = "৳" + total;
+      countEl.textContent = count;
+    }
+
+    // Listen for taps and clicks
+    grid.addEventListener("click", e => {
+      const btn = e.target.closest(".add-btn");
+      if (btn) addToCart(Number(btn.dataset.id));
+    });
+    itemsBox.addEventListener("click", e => {
+      const btn = e.target.closest(".qty-btn");
+      if (btn) changeQty(Number(btn.dataset.id), Number(btn.dataset.delta));
+    });
+    document.getElementById("cart-open").addEventListener("click", openCart);
+    document.getElementById("cart-close").addEventListener("click", closeCart);
+    overlay.addEventListener("click", closeCart);
+
+    renderCart();
   </script>
 </body>
 </html>
