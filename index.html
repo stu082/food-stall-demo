@@ -327,6 +327,21 @@
       font-family: inherit;
       font-size: 1rem;
     }
+      /* Leaderboard */
+    .lb {
+      width: 100%;
+      max-width: 520px;
+      margin: 0 auto;
+      border-collapse: collapse;
+    }
+    .lb th, .lb td {
+      padding: 12px 14px;
+      text-align: left;
+      border-bottom: 1px solid #262626;
+    }
+    .lb th { color: var(--muted); font-weight: 500; font-size: 0.85rem; }
+    .lb th:last-child, .lb td.score { text-align: right; }
+    .lb td.score { color: var(--gold); font-weight: 600; }
   </style>
 </head>
 <body>
@@ -336,6 +351,7 @@
     <div>
       <a class="link" href="#menu">Menu</a>
             <a class="link" href="#game">Game</a>
+            <a class="link" href="#leaderboard">Leaderboard</a>
             <button class="cart-btn" id="cart-open">Cart (<span id="cart-count">0</span>)</button>
     </div>
   </nav>
@@ -362,6 +378,14 @@
       <canvas id="game-canvas" width="360" height="480"></canvas>
       <button class="btn" id="game-start">Start Game</button>
     </div>
+  </section>
+    <section class="section" id="leaderboard">
+    <h2>Leaderboard</h2>
+    <p class="lead">Top 10 players.</p>
+    <table class="lb">
+      <thead><tr><th>#</th><th>Player</th><th>Score</th></tr></thead>
+      <tbody id="lb-body"><tr><td colspan="3">Loading...</td></tr></tbody>
+    </table>
   </section>
     <div class="overlay" id="overlay"></div>
   <aside class="cart-panel" id="cart-panel">
@@ -676,6 +700,44 @@
     ctx.font = "22px Arial, sans-serif";
     ctx.fillText("Press Start to play", W / 2, H / 2);
     ctx.textAlign = "left";
+      // ----- Leaderboard (reads from Supabase) -----
+    const SUPABASE_URL = "https://ahwalbtifuniktmghdtx.supabase.co";  // paste your Project URL
+    const SUPABASE_KEY = "sb_publishable_TVJnzT5HldkeBSCbATshFA_OxftvBu9";      // publishable / anon key ONLY
+
+    // Makes text safe to show on a page (see the security note below)
+    function escapeHtml(text) {
+      return String(text).replace(/[&<>"']/g, c => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[c]));
+    }
+
+    async function loadLeaderboard() {
+      const body = document.getElementById("lb-body");
+      try {
+        // Highest score first. If two scores tie, the earlier one ranks higher.
+        const url = SUPABASE_URL +
+          "/rest/v1/scores?select=player_name,score&order=score.desc,created_at.asc&limit=10";
+        const res = await fetch(url, { headers: { apikey: SUPABASE_KEY } });
+        if (!res.ok) throw new Error("Request failed with status " + res.status);
+        const rows = await res.json();
+
+        if (rows.length === 0) {
+          body.innerHTML = '<tr><td colspan="3">No scores yet. Be the first!</td></tr>';
+          return;
+        }
+        body.innerHTML = rows.map((r, i) => `
+          <tr>
+            <td>${i + 1}</td>
+            <td>${escapeHtml(r.player_name)}</td>
+            <td class="score">${r.score}</td>
+          </tr>`).join("");
+      } catch (err) {
+        console.error("Leaderboard error:", err);
+        body.innerHTML = '<tr><td colspan="3">Could not load the leaderboard.</td></tr>';
+      }
+    }
+
+    loadLeaderboard();
   </script>
 </body>
 </html>
