@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0b0b0b">
-  <title>Ember &amp; Roll | Fire-Grilled Chicken Rolls, Gulshan</title>
+  <title>Ember &amp; Roll | Fire-Grilled Chicken Rolls, Mirpur</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
@@ -342,6 +342,11 @@
     .lb th { color: var(--muted); font-weight: 500; font-size: 0.85rem; }
     .lb th:last-child, .lb td.score { text-align: right; }
     .lb td.score { color: var(--gold); font-weight: 600; }
+      /* Save-score form */
+    #score-form { display: none; margin-top: 16px; }
+    #score-form .field { margin-bottom: 8px; }
+    #form-msg { color: var(--muted); font-size: 0.9rem; min-height: 1.2em; margin: 6px 0 0; }
+    #score-submit { border: none; cursor: pointer; font-family: inherit; font-size: 1rem; }
   </style>
 </head>
 <body>
@@ -377,6 +382,11 @@
       </div>
       <canvas id="game-canvas" width="360" height="480"></canvas>
       <button class="btn" id="game-start">Start Game</button>
+            <div id="score-form">
+        <input class="field" id="score-name" type="text" maxlength="20" placeholder="Your name for the leaderboard">
+        <button class="btn" id="score-submit">Save My Score</button>
+        <p id="form-msg"></p>
+      </div>
     </div>
   </section>
     <section class="section" id="leaderboard">
@@ -581,13 +591,15 @@
       lastTime = performance.now();
       scoreEl.textContent = 0;
       timeEl.textContent = GAME_SECONDS;
-      startBtn.style.display = "none";
+            startBtn.style.display = "none";
+      hideScoreForm();
       requestAnimationFrame(loop);
     }
 
     function endGame() {
       running = false;
-      startBtn.textContent = "Play Again";
+            startBtn.textContent = "Play Again";
+      showScoreForm();
       startBtn.style.display = "inline-block";
       draw();
       ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
@@ -738,6 +750,46 @@
     }
 
     loadLeaderboard();
+      // ----- Saving the score (goes through the server function) -----
+    const scoreForm = document.getElementById("score-form");
+    const nameInput = document.getElementById("score-name");
+    const submitBtn = document.getElementById("score-submit");
+    const formMsg = document.getElementById("form-msg");
+
+    function showScoreForm() {
+      if (score <= 0) return; // nothing to save
+      scoreForm.style.display = "block";
+      formMsg.textContent = "";
+      submitBtn.disabled = false;
+    }
+    function hideScoreForm() {
+      scoreForm.style.display = "none";
+    }
+
+    submitBtn.addEventListener("click", async () => {
+      const name = nameInput.value.trim();
+      if (name.length < 1 || name.length > 20) {
+        formMsg.textContent = "Enter a name (1 to 20 characters).";
+        return;
+      }
+      submitBtn.disabled = true;
+      formMsg.textContent = "Saving...";
+      try {
+        const res = await fetch("/.netlify/functions/submit-score", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: name, score: score })
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.error || "Could not save");
+        formMsg.textContent = "Saved! See the leaderboard below.";
+        loadLeaderboard(); // refresh the table
+      } catch (err) {
+        console.error("Save error:", err);
+        formMsg.textContent = "Could not save your score. Try again.";
+        submitBtn.disabled = false;
+      }
+    });
   </script>
 </body>
 </html>
