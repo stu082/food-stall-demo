@@ -1,6 +1,6 @@
 # Ember & Roll — Food Stall Demo Website
 
-A mobile-first ordering website for a fictional grilled chicken roll stall in Gulshan, Dhaka. Customers can browse the menu, build a cart, order through WhatsApp, and play a mini game to compete on a live leaderboard.
+A mobile-first ordering website for a fictional grilled chicken roll stall in Mirpur, Dhaka. Customers can browse the menu, build a cart, order through WhatsApp, and play a mini game to compete on a live leaderboard.
 
 **Live demo:** https://food-stall-demo.netlify.app/
 
