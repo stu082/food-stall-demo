@@ -353,7 +353,7 @@
   </section>
     <section class="section" id="game">
     <h2>Catch the Roll</h2>
-    <p class="lead">Catch the food. Beat the clock. 30 seconds.</p>
+        <p class="lead">Catch the food. Dodge the bombs. 30 seconds.</p>
     <div class="game-wrap">
       <div class="hud">
         <span>Score: <strong id="game-score">0</strong></span>
@@ -538,7 +538,10 @@
     const startBtn = document.getElementById("game-start");
 
     const GAME_SECONDS = 30;
-    const foods = ["🌯", "🍗", "🍟"];
+        const foods = ["🌯", "🍗", "🍟"];
+    const BOMB_EMOJI = "💣";
+    const BOMB_CHANCE = 0.2;   // 0.2 means 20% of items are bombs
+    const BOMB_PENALTY = 3;    // points lost when you catch a bomb
 
     let player, items, score, timeLeft, spawnTimer, lastTime;
     let running = false;
@@ -576,13 +579,20 @@
     }
 
     // Create one new falling food at a random spot at the top
+        // Goes from 1 (start) up to 2 (end of the game). Used to speed things up.
+    function difficulty() {
+      return 1 + (GAME_SECONDS - timeLeft) / GAME_SECONDS;
+    }
+
     function spawnItem() {
+      const isBomb = Math.random() < BOMB_CHANCE;
       items.push({
         x: Math.random() * (W - 30),
         y: -30,
         size: 30,
-        speed: 120 + Math.random() * 80,
-        emoji: foods[Math.floor(Math.random() * foods.length)]
+        speed: (120 + Math.random() * 80) * difficulty(),
+        bomb: isBomb,
+        emoji: isBomb ? BOMB_EMOJI : foods[Math.floor(Math.random() * foods.length)]
       });
     }
 
@@ -593,7 +603,7 @@
       if (timeLeft <= 0) { endGame(); return; }
 
       spawnTimer += dt;
-      if (spawnTimer > 0.8) { spawnTimer = 0; spawnItem(); }
+            if (spawnTimer > 0.8 / difficulty()) { spawnTimer = 0; spawnItem(); }
 
       // keyboard movement
       if (keys.left) player.x -= 300 * dt;
@@ -609,7 +619,11 @@
           it.x + it.size >= player.x &&
           it.x <= player.x + player.w;
         if (caught) {
-          score += 1;
+                    if (it.bomb) {
+            score = Math.max(0, score - BOMB_PENALTY);
+          } else {
+            score += 1;
+          }
           scoreEl.textContent = score;
           return false; // remove it
         }
