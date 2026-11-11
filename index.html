@@ -298,6 +298,35 @@
       min-height: 1.2em;
       margin: 0 0 8px;
     }
+      /* Game */
+    .game-wrap {
+      max-width: 360px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      color: var(--muted);
+    }
+    .hud strong { color: var(--gold); }
+    #game-canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: #101010;
+      border: 1px solid #333;
+      border-radius: 16px;
+      touch-action: none; /* lets you drag on the game without the page scrolling */
+    }
+    #game-start {
+      margin-top: 16px;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 1rem;
+    }
   </style>
 </head>
 <body>
@@ -306,6 +335,7 @@
     <a class="logo" href="#top">Ember &amp; Roll</a>
     <div>
       <a class="link" href="#menu">Menu</a>
+            <a class="link" href="#game">Game</a>
             <button class="cart-btn" id="cart-open">Cart (<span id="cart-count">0</span>)</button>
     </div>
   </nav>
@@ -320,6 +350,18 @@
     <h2>The Menu</h2>
     <p class="lead">Grilled over charcoal, rolled to order.</p>
     <div class="menu-grid" id="menu-grid"></div>
+  </section>
+    <section class="section" id="game">
+    <h2>Catch the Roll</h2>
+    <p class="lead">Catch the food. Beat the clock. 30 seconds.</p>
+    <div class="game-wrap">
+      <div class="hud">
+        <span>Score: <strong id="game-score">0</strong></span>
+        <span>Time: <strong id="game-time">30</strong>s</span>
+      </div>
+      <canvas id="game-canvas" width="360" height="480"></canvas>
+      <button class="btn" id="game-start">Start Game</button>
+    </div>
   </section>
     <div class="overlay" id="overlay"></div>
   <aside class="cart-panel" id="cart-panel">
@@ -486,6 +528,140 @@
       const url = "https://wa.me/" + WHATSAPP_NUMBER + "?text=" + encodeURIComponent(message);
       window.open(url, "_blank");
     });
+      // ----- Mini game: Catch the Roll -----
+    const canvas = document.getElementById("game-canvas");
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width;   // 360
+    const H = canvas.height;  // 480
+    const scoreEl = document.getElementById("game-score");
+    const timeEl = document.getElementById("game-time");
+    const startBtn = document.getElementById("game-start");
+
+    const GAME_SECONDS = 30;
+    const foods = ["🌯", "🍗", "🍟"];
+
+    let player, items, score, timeLeft, spawnTimer, lastTime;
+    let running = false;
+    const keys = { left: false, right: false };
+
+    function startGame() {
+      player = { x: W / 2 - 40, y: H - 40, w: 80, h: 16 };
+      items = [];
+      score = 0;
+      timeLeft = GAME_SECONDS;
+      spawnTimer = 0;
+      running = true;
+      lastTime = performance.now();
+      scoreEl.textContent = 0;
+      timeEl.textContent = GAME_SECONDS;
+      startBtn.style.display = "none";
+      requestAnimationFrame(loop);
+    }
+
+    function endGame() {
+      running = false;
+      startBtn.textContent = "Play Again";
+      startBtn.style.display = "inline-block";
+      draw();
+      ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = "#c9a24b";
+      ctx.textAlign = "center";
+      ctx.font = "bold 32px Georgia, serif";
+      ctx.fillText("Time's up!", W / 2, H / 2 - 10);
+      ctx.fillStyle = "#f4efe6";
+      ctx.font = "22px Arial, sans-serif";
+      ctx.fillText("Your score: " + score, W / 2, H / 2 + 30);
+      ctx.textAlign = "left";
+    }
+
+    // Create one new falling food at a random spot at the top
+    function spawnItem() {
+      items.push({
+        x: Math.random() * (W - 30),
+        y: -30,
+        size: 30,
+        speed: 120 + Math.random() * 80,
+        emoji: foods[Math.floor(Math.random() * foods.length)]
+      });
+    }
+
+    // Move everything a little bit. dt = seconds since the last frame.
+    function update(dt) {
+      timeLeft -= dt;
+      timeEl.textContent = Math.max(0, Math.ceil(timeLeft));
+      if (timeLeft <= 0) { endGame(); return; }
+
+      spawnTimer += dt;
+      if (spawnTimer > 0.8) { spawnTimer = 0; spawnItem(); }
+
+      // keyboard movement
+      if (keys.left) player.x -= 300 * dt;
+      if (keys.right) player.x += 300 * dt;
+      player.x = Math.max(0, Math.min(W - player.w, player.x));
+
+      // move foods down, then check for catches (collision detection)
+      items.forEach(it => { it.y += it.speed * dt; });
+      items = items.filter(it => {
+        const caught =
+          it.y + it.size >= player.y &&
+          it.y <= player.y + player.h &&
+          it.x + it.size >= player.x &&
+          it.x <= player.x + player.w;
+        if (caught) {
+          score += 1;
+          scoreEl.textContent = score;
+          return false; // remove it
+        }
+        return it.y < H; // remove it if it fell off the bottom
+      });
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      ctx.font = "28px serif";
+      ctx.textBaseline = "top";
+      items.forEach(it => ctx.fillText(it.emoji, it.x, it.y));
+      ctx.fillStyle = "#c9a24b";
+      ctx.fillRect(player.x, player.y, player.w, player.h);
+    }
+
+    // The game loop: runs about 60 times per second
+    function loop(now) {
+      if (!running) return;
+      const dt = Math.min((now - lastTime) / 1000, 0.05);
+      lastTime = now;
+      update(dt);
+      if (running) { draw(); requestAnimationFrame(loop); }
+    }
+
+    // Controls: finger or mouse drag, plus arrow keys
+    function moveToPointer(e) {
+      if (!running) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (W / rect.width);
+      player.x = Math.max(0, Math.min(W - player.w, x - player.w / 2));
+    }
+    canvas.addEventListener("pointermove", moveToPointer);
+    canvas.addEventListener("pointerdown", moveToPointer);
+
+    document.addEventListener("keydown", e => {
+      if (e.key === "ArrowLeft") { keys.left = true; if (running) e.preventDefault(); }
+      if (e.key === "ArrowRight") { keys.right = true; if (running) e.preventDefault(); }
+    });
+    document.addEventListener("keyup", e => {
+      if (e.key === "ArrowLeft") keys.left = false;
+      if (e.key === "ArrowRight") keys.right = false;
+    });
+
+    startBtn.addEventListener("click", startGame);
+
+    // Idle screen before the first game
+    ctx.fillStyle = "#c9a24b";
+    ctx.textAlign = "center";
+    ctx.font = "22px Arial, sans-serif";
+    ctx.fillText("Press Start to play", W / 2, H / 2);
+    ctx.textAlign = "left";
   </script>
 </body>
 </html>
